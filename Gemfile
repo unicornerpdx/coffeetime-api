@@ -6,6 +6,7 @@ gem 'jsonatra'
 gem 'httpclient'
 gem 'pg'
 gem 'sequel'
+gem 'jwt'
 gem 'logger'
 gem 'rake'
 

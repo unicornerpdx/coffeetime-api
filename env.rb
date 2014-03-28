@@ -4,6 +4,7 @@ unless File.exists? './config.yml'
 end
 
 require 'yaml'
+require 'securerandom'
 
 if ENV['RACK_ENV']
   SiteConfig = YAML.load_file('config.yml')[ENV['RACK_ENV']]

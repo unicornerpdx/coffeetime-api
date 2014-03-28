@@ -6,9 +6,12 @@ GEM
     json (1.8.1)
     jsonatra (1.0.5)
       sinatra
+    jwt (0.1.8)
+      multi_json (>= 1.5)
     logger (1.2.8)
     method_source (0.8.2)
     minitest (5.3.1)
+    multi_json (1.8.4)
     pg (0.17.0)
     pry (0.9.12.4)
       coderay (~> 1.0)
@@ -39,6 +42,7 @@ DEPENDENCIES
   httpclient
   json
   jsonatra
+  jwt
   logger
   minitest
   pg
