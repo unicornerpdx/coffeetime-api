@@ -10,7 +10,7 @@ class App < Jsonatra::Base
     # TODO: actually store this somewhere
 
     {
-      result: 'ok'
+      status: 'ok'
     }
   end
 

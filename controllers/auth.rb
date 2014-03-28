@@ -14,7 +14,11 @@ class App < Jsonatra::Base
     }
 
     {
-      access_token: JWT.encode(token, SiteConfig['secret'])
+      access_token: JWT.encode(token, SiteConfig['secret']),
+      user_id: 0,
+      username: token[:username],
+      display_name: 'Bob',
+      avatar_url: 'http://gravatar.com/foo'
     }
   end
 

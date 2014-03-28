@@ -6,7 +6,13 @@ class App < Jsonatra::Base
     # Fetch new group list for the auth'd user
 
     {
-      groups: []
+      groups: [
+        {
+          group_id: 1,
+          organization_name: "Esri PDX",
+          user_balance: 10
+        }
+      ]
     }
   end
 
@@ -19,9 +25,29 @@ class App < Jsonatra::Base
     # TODO: get list of recent transactions the auth'd user has participated in the group
 
     {
-      user_balance: 0,
-      users: [],
-      transactions: []
+      organization_name: "Esri PDX",
+      user_balance: 10,
+      users: [
+        {
+          user_id: 0,
+          username: 'bob',
+          display_name: 'Bob',
+          avatar_url: 'http://gravatar.com/foo'
+        }
+      ],
+      transactions: [
+        {
+          date: "2014-03-27T09:00:00-0700",
+          from_user_id: 13,
+          to_user_id: 14,
+          latitude: 45,
+          longitude: -122,
+          accuracy: 1000,
+          amount: 3,
+          note: "Sucker",
+          created_by: 13
+        }
+      ]
     }
   end
 

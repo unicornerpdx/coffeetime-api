@@ -19,7 +19,7 @@ class App < Jsonatra::Base
     # location_date
 
     {
-      user_balance: 0
+      # see group/info
     }
   end
 
@@ -32,7 +32,9 @@ class App < Jsonatra::Base
     # limit
 
     {
-      transactions: []
+      transactions: [
+        
+      ]
     }
   end
 
