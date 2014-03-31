@@ -35,9 +35,25 @@ class App < Jsonatra::Base
 
     jj github_user
 
+    # Check if the user already exists, and update if so
+    user = SQL[:users].first :github_user_id => github_user['id'].to_s
+    if user
+      SQL[:users].where(:id => user[:id]).update({
+        username: github_user['login'],
+        display_name: github_user['name'],
+        avatar_url: github_user['avatar_url']
+      })
+    else
+      SQL[:users] << {
+        github_user_id: github_user['id'].to_s,
+        username: github_user['login'],
+        display_name: github_user['name'],
+        avatar_url: github_user['avatar_url']
+      }
+    end
 
     token = {
-      username: github_user['login'],
+      username: user[:username],
       github_access_token: github_token['access_token'],
       date_issued: Time.now.to_i,
       nonce: SecureRandom.hex
@@ -45,10 +61,10 @@ class App < Jsonatra::Base
 
     {
       access_token: JWT.encode(token, SiteConfig['secret']),
-      user_id: 0,
-      username: token[:username],
-      display_name: github_user['name'],
-      avatar_url: github_user['avatar_url']
+      user_id: user[:id],
+      username: user[:username],
+      display_name: user[:display_name],
+      avatar_url: user[:avatar_url]
     }
   end
 

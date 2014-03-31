@@ -11,19 +11,16 @@ Rake::TestTask.new do |t|
 end
 
 namespace :db do
-  task :setup do
-    SQL.create_table :stats do
-      primary_key [:group_id, :client_id, :date, :key, :value]
-      String :group_id
-      String :client_id
-      DateTime :date
-      String :key
-      String :value
-      Integer :num
-      index [:group_id, :client_id, :date, :key]
-      index [:client_id, :date, :key]
-      index [:date, :key]
-      index [:key]
+
+  task :migrate, [:version] do |t, args|
+    Sequel.extension :migration
+    if args[:version]
+      puts "Migrating to version #{args[:version]}"
+      Sequel::Migrator.run(SQL, "migrations", target: args[:version].to_i)
+    else
+      puts "Migrating to latest"
+      Sequel::Migrator.run(SQL, "migrations")
     end
   end
+
 end
