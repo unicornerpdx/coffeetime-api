@@ -33,10 +33,10 @@ class App < Jsonatra::Base
     {
       callbacks: [
         {
-          "url": "http://example.com/callback",
-          "last_request_date": "2014-03-27T13:49:00-0700",
-          "last_response_date": "2014-03-27T13:49:00-0700",
-          "response_status_code": 200
+          url: "http://example.com/callback",
+          last_request_date: "2014-03-27T13:49:00-0700",
+          last_response_date: "2014-03-27T13:49:00-0700",
+          response_status_code: 200
         }
       ]
     }
@@ -52,12 +52,12 @@ class App < Jsonatra::Base
     param_error :url, 'not_registered', 'url was not registered' if false
 
     {
-      "url": "http://example.com/callback",
-      "last_request_date": "2014-03-27T13:49:00-0700",
-      "request": "POST /callback HTTP/1.1\nHost: example.com\nContent-type: application/json\n\n{.....}",
-      "last_response_date": "2014-03-27T13:49:00-0700",
-      "response_status_code": 200,
-      "response": "HTTP/1.1 200 OK\n\n"
+      url: "http://example.com/callback",
+      last_request_date: "2014-03-27T13:49:00-0700",
+      request: "POST /callback HTTP/1.1\nHost: example.com\nContent-type: application/json\n\n{.....}",
+      last_response_date: "2014-03-27T13:49:00-0700",
+      response_status_code: 200,
+      response: "HTTP/1.1 200 OK\n\n"
     }
   end
 

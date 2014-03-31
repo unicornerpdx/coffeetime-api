@@ -13,7 +13,10 @@ class App < Jsonatra::Base
       user_id: 0,
       username: token[:username],
       display_name: 'Bob',
-      avatar_url: 'http://gravatar.com/foo'
-      balance: 0  # if group_id is given
+      avatar_url: 'http://gravatar.com/foo',
+      user_balance: 0,  # if group_id is given
+      active: true      # if group_id is given
     }
+  end
+
 end
