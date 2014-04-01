@@ -53,6 +53,7 @@ class App < Jsonatra::Base
     end
 
     token = {
+      user_id: user[:id],
       username: user[:username],
       github_access_token: github_token['access_token'],
       date_issued: Time.now.to_i,

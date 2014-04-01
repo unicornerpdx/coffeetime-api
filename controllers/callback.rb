@@ -7,6 +7,8 @@ class App < Jsonatra::Base
     param_error :url, 'missing', 'url is required' if params['url'].blank?
     param_error :url, 'invalid', 'url is invalid' if false
 
+    halt if response.error?
+
     {
       status: "ok"
     }
@@ -20,6 +22,8 @@ class App < Jsonatra::Base
     param_error :url, 'invalid', 'url is invalid' if false
 
     param_error :url, 'not_registered', 'url was not registered' if false
+
+    halt if response.error?
 
     {
       status: "ok"
@@ -50,6 +54,8 @@ class App < Jsonatra::Base
     param_error :url, 'invalid', 'url is invalid' if false
 
     param_error :url, 'not_registered', 'url was not registered' if false
+
+    halt if response.error?
 
     {
       url: "http://example.com/callback",

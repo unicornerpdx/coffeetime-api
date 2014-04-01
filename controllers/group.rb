@@ -51,4 +51,35 @@ class App < Jsonatra::Base
     }
   end
 
+  post '/group/create' do
+
+  end
+
+  get '/team/list' do
+    require_auth
+
+    client = HTTPClient.new
+    result = client.get "https://api.github.com/user/teams", { per_page: 100 }, {
+      'Authorization' => "Bearer #{@token['github_access_token']}"
+    }
+
+    github_teams = JSON.parse(result.body)
+    puts result.headers
+    jj github_teams
+
+    teams = []
+    github_teams.each do |team|
+      teams << {
+        github_id: team['id'],
+        name: team['name'],
+        org: team['organization']['login'],
+        members: team['members_count']
+      }
+    end
+
+    {
+      teams: teams
+    }
+  end
+
 end

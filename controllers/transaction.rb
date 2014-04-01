@@ -8,9 +8,14 @@ class App < Jsonatra::Base
 
     user = nil
     param_error :user_id, 'invalid', 'user_id not found required' if user.nil?
+
+    halt if response.error?
+
     param_error :user_id, 'invalid', 'user_id is not a member of this group' if false
 
     param_error :amount, 'missing', 'amount is required' if params['amount'].blank? or params['amount'] == 0
+
+    halt if response.error?
 
     # note
     # latitude
@@ -33,7 +38,7 @@ class App < Jsonatra::Base
 
     {
       transactions: [
-        
+
       ]
     }
   end
