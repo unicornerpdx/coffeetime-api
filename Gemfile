@@ -9,6 +9,7 @@ gem 'sequel'
 gem 'jwt'
 gem 'logger'
 gem 'rake'
+gem 'octokit'
 
 gem 'puma'
 gem 'shotgun'

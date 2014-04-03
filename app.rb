@@ -1,4 +1,4 @@
-Dir.glob(['controllers'].map! {|d| File.join d, '*.rb'}).each do |f| 
+Dir.glob(['controllers','lib'].map! {|d| File.join d, '*.rb'}).each do |f| 
   require_relative f
 end
 
@@ -20,6 +20,12 @@ class App < Jsonatra::Base
       param_error :authorization, 'invalid', 'Access token was invalid'
     end
     halt if response.error?
+
+    @github = Octokit::Client.new :access_token => @token['github_access_token']
+    Octokit.auto_paginate = true
+
+    @user = SQL[:users].first :id => @token['user_id']
+
     @token
   end
 

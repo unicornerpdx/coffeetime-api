@@ -9,7 +9,7 @@ class App < Jsonatra::Base
       groups: [
         {
           group_id: 1,
-          organization_name: "Esri PDX",
+          group_name: "Esri PDX",
           user_balance: 10
         }
       ]
@@ -25,7 +25,7 @@ class App < Jsonatra::Base
     # TODO: get list of recent transactions the auth'd user has participated in the group
 
     {
-      organization_name: "Esri PDX",
+      group_name: "Esri PDX",
       user_balance: 10,
       users: [
         {
@@ -52,33 +52,86 @@ class App < Jsonatra::Base
   end
 
   post '/group/create' do
+    require_auth
+    param_error :github_team_id, 'missing', 'github_team_id is required' if params['github_team_id'].blank?
+    param_error :name, 'missing', 'name is required' if params['name'].blank?
+
+    # Check if the user is a member of the team
+    if !@github.team_member?(params['github_team_id'], @user[:username])
+      param_error :github_team_id, 'invalid', 'You are not a member of this team'
+    end
+
+    # Check if the group already exists
+    group = SQL[:groups].first :github_team_id => params['github_team_id']
+
+    if group
+      param_error :github_team_id, 'already_exists', 'There is already a group for this Github team!'
+    end
+
+    halt if response.error?
+
+    # Let's go set up the group now!
+
+    # Create the group
+    SQL[:groups] << {
+      github_team_id: params['github_team_id'],
+      name: params['name']
+    }
+
+    group = SQL[:groups].first :github_team_id => params['github_team_id']
+
+    # Find all users in the team
+    members = @github.team_members params['github_team_id']
+
+    members.each do |member|
+      user = SQL[:users].first :github_user_id => member.id.to_s
+      if !user
+        # Create user records for any users not already in the database
+        SQL[:users] << {
+          github_user_id: member.id.to_s,
+          username: member.login,
+          display_name: member.login,
+          avatar_url: member.rels[:avatar].href
+        }
+        user = SQL[:users].first :github_user_id => member.id.to_s
+      end
+      # Add the members to the group
+      SQL[:memberships] << {
+        group_id: group[:id],
+        user_id: user[:id],
+        balance: 0,
+        active: true
+      }
+    end
+
+    {
+      group_id: group[:id],
+      group_name: group[:name]
+    }
+  end
+
+  post '/group/update' do
 
   end
 
   get '/team/list' do
     require_auth
 
-    client = HTTPClient.new
-    result = client.get "https://api.github.com/user/teams", { per_page: 100 }, {
-      'Authorization' => "Bearer #{@token['github_access_token']}"
-    }
-
-    github_teams = JSON.parse(result.body)
-    puts result.headers
-    jj github_teams
+    github_teams = @github.user_teams :per_page => 100
 
     teams = []
     github_teams.each do |team|
       teams << {
-        github_id: team['id'],
-        name: team['name'],
-        org: team['organization']['login'],
-        members: team['members_count']
+        github_id: team.id,
+        name: team.name,
+        org: team.organization.login,
+        members: team.members_count
       }
     end
 
     {
-      teams: teams
+      teams: teams,
+      number: teams.length
     }
   end
 
