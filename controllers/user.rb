@@ -30,8 +30,11 @@ class App < Jsonatra::Base
     end
 
     if group
+      g_balance = group_balance(group[:id])
       balance = {
         user_balance: membership[:balance],  # if group_id is given
+        max_balance: g_balance[:max],
+        min_balance: g_balance[:min],
         active: membership[:active]
       }
     else

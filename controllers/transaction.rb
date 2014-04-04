@@ -70,12 +70,6 @@ class App < Jsonatra::Base
       SQL[:memberships].where(:group_id => @group[:id], :user_id => other_user[:id]).update(:balance => Sequel.-(:balance, amount))
     end
 
-    # note
-    # latitude
-    # longitude
-    # accuracy
-    # location_date
-
     {
       # see group/info
     }
