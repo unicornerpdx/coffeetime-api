@@ -75,7 +75,9 @@ class App < Jsonatra::Base
     # Create the group
     SQL[:groups] << {
       github_team_id: params['github_team_id'],
-      name: params['name']
+      name: params['name'],
+      date_updated: DateTime.now,
+      date_created: DateTime.now
     }
 
     group = SQL[:groups].first :github_team_id => params['github_team_id']
@@ -91,7 +93,9 @@ class App < Jsonatra::Base
           github_user_id: member.id.to_s,
           username: member.login,
           display_name: member.login,
-          avatar_url: member.rels[:avatar].href
+          avatar_url: member.rels[:avatar].href,
+          date_updated: DateTime.now,
+          date_created: DateTime.now
         }
         user = SQL[:users].first :github_user_id => member.id.to_s
       end
@@ -100,7 +104,9 @@ class App < Jsonatra::Base
         group_id: group[:id],
         user_id: user[:id],
         balance: 0,
-        active: true
+        active: true,
+        date_updated: DateTime.now,
+        date_created: DateTime.now
       }
     end
 

@@ -41,15 +41,19 @@ class App < Jsonatra::Base
       SQL[:users].where(:id => user[:id]).update({
         username: github_user['login'],
         display_name: github_user['name'],
-        avatar_url: github_user['avatar_url']
+        avatar_url: github_user['avatar_url'],
+        date_updated: DateTime.now
       })
     else
       SQL[:users] << {
         github_user_id: github_user['id'].to_s,
         username: github_user['login'],
         display_name: github_user['name'],
-        avatar_url: github_user['avatar_url']
+        avatar_url: github_user['avatar_url'],
+        date_updated: DateTime.now,
+        date_created: DateTime.now
       }
+      user = SQL[:users].first :github_user_id => github_user['id'].to_s
     end
 
     token = {
