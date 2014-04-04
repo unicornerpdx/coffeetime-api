@@ -38,6 +38,10 @@ class App < Jsonatra::Base
     @group = nil
   end
 
+  def group_balance(group_id)
+    SQL[:memberships].select(Sequel.function(:max, :balance), Sequel.function(:min, :balance)).where(:group_id => group_id).first
+  end
+
   get '/' do
     {
       hello: 'world'

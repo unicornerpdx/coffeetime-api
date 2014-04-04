@@ -3,16 +3,22 @@ class App < Jsonatra::Base
   get '/group/list' do
     require_auth
 
-    # Fetch new group list for the auth'd user
+    query = SQL[:groups].select(:groups__id, :groups__name, :memberships__balance).join(:memberships, :group_id => :id).where(:memberships__user_id => @user[:id])
+
+    groups = []
+    query.each do |group|
+      balance = group_balance(group[:id])
+      groups << {
+        group_id: group[:id],
+        group_name: group[:name],
+        user_balance: group[:balance],
+        max_balance: balance[:max],
+        min_balance: balance[:min]
+      }
+    end
 
     {
-      groups: [
-        {
-          group_id: 1,
-          group_name: "Esri PDX",
-          user_balance: 10
-        }
-      ]
+      groups: groups
     }
   end
 
