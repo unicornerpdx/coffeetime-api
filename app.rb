@@ -31,11 +31,17 @@ class App < Jsonatra::Base
 
   def require_group
     param_error :group_id, 'missing', 'group_id required' if params['group_id'].blank?
-    group = nil
-    param_error :group_id, 'invalid', 'group_id not found required' if group.nil?
+    halt if response.error?
+
+    # Check if the group exists
+    @group = SQL[:groups].first :id => params['group_id']
+    param_error :group_id, 'invalid', 'group_id not found' if @group.nil?
+    halt if response.error?
+
     # Check if the user is a member of the group
-    param_error :group_id, 'forbidden', 'user not a member of this group' if false
-    @group = nil
+    @membership = SQL[:memberships].first :group_id => @group[:id], :user_id => @user[:id]
+    param_error :group_id, 'forbidden', 'user not a member of this group' if @membership.nil?
+    halt if response.error?
   end
 
   def group_balance(group_id)
