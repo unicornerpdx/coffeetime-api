@@ -18,14 +18,21 @@ class App < Jsonatra::Base
       param_error :group_id, 'not_found', 'group_id not found' if group.nil?
 
       halt if response.error?
+
+      # Check the memberships table and error if there is no membership.
+      # Memberships are never removed from the table, just marked as inactive later.
+      membership = SQL[:memberships].first :group_id => group[:id], :user_id => user[:id]
+      param_error :group_id, 'invalid', 'This user was never part of this group' if membership.nil?
+
+      halt if response.error?
     else 
       group = nil
     end
 
     if group
       balance = {
-        user_balance: 0,  # if group_id is given
-        active: true      # if group_id is given
+        user_balance: membership[:balance],  # if group_id is given
+        active: membership[:active]
       }
     else
       balance = {}
