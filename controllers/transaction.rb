@@ -30,9 +30,12 @@ class App < Jsonatra::Base
       # Jane's balance goes up by 10 (other_user -= amount) (has 10 more coffee points)
       # Your balance goes down by 10 (@user += amount) (because amount is negative)
       from_user_id = other_user[:id]
+      from_user = other_user
       to_user_id = @user[:id]
+      to_user = @user
       # This is the notification text to send to the other user
       notification = "You bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
+      callback_text = "#{other_user[:display_name]} bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
     else
       # Screen is green
       # "Jane owes you 10 coffees"
@@ -41,10 +44,15 @@ class App < Jsonatra::Base
       # Your balance goes up by 10 (@user += amount) (because amount is positive)
       # Jane's balance goes down by 10 (other_user -= amount) 
       from_user_id = @user[:id]
+      from_user = @user
       to_user_id = other_user[:id]
+      to_user = other_user
       # This is the notification text to send to the other user
       notification = "#{@user[:display_name]} bought you #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
+      callback_text = "#{@user[:display_name]} bought #{other_user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
     end
+
+    transaction_id = false
 
     SQL.transaction do
       if params['latitude']
@@ -58,7 +66,7 @@ class App < Jsonatra::Base
       end
 
       # Add the transaction
-      SQL[:transactions] << {
+      transaction_id = SQL[:transactions].insert({
         date: DateTime.now,
         group_id: @group[:id],
         created_by: @user[:id],
@@ -68,7 +76,8 @@ class App < Jsonatra::Base
         note: params['note'],
         date_updated: DateTime.now,
         date_created: DateTime.now
-      }.merge(location)
+      }.merge(location))
+      puts transaction_id.inspect
       # Update the balances for the two users
       get_membership(@group[:id], @user[:id]).update(:balance => Sequel.+(:balance, amount))
       get_membership(@group[:id], other_user[:id]).update(:balance => Sequel.-(:balance, amount))
@@ -77,10 +86,31 @@ class App < Jsonatra::Base
     # Reload the membership to get the updated balance for the group
     @membership = get_membership(@group[:id], @user[:id]).first
 
-    # Send the other user a push notification
-    Pushie.send other_user, notification
+    if transaction_id
+      # Send the other user a push notification
+      Pushie.send other_user, notification
 
-    group_info @group, @user, @membership
+      # Send to the callback URLs registered for this group
+      callback_params = {}
+      callback_params[:group] = {
+        group_id: @group[:id],
+        group_name: @group[:name],
+        timezone: @group[:timezone]
+      }
+      callback_params[:transaction] = format_transaction(SQL[:transactions].first(:id => transaction_id), @group[:timezone], false)
+      callback_params[:from_user] = format_user(from_user, @group, get_membership(@group[:id], from_user[:id]).first)
+      callback_params[:to_user] = format_user(to_user, @group, get_membership(@group[:id], to_user[:id]).first)
+      Callback.send @group, callback_params
+
+      group_info @group, @user, @membership
+    else
+      {
+        error: {
+          type: 'unknown_error',
+          message: 'There was an error creating the transaction'
+        }
+      }
+    end
   end
 
   get '/transaction/history' do

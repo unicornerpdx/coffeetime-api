@@ -75,7 +75,8 @@ class App < Jsonatra::Base
           url: cb[:url],
           last_request_date: format_date(cb[:last_payload_sent_date], @group[:timezone]),
           last_response_date: format_date(cb[:last_response_received_date], @group[:timezone]),
-          response_status_code: cb[:last_response_code]
+          last_response_status: cb[:last_response_status],
+          last_response_status_code: cb[:last_response_code]
         }
       }
     }
@@ -101,7 +102,8 @@ class App < Jsonatra::Base
       url: callback[:url],
       last_request_date: format_date(callback[:last_payload_sent_date], @group[:timezone]),
       last_response_date: format_date(callback[:last_response_received_date], @group[:timezone]),
-      response_status_code: callback[:last_response_code],
+      last_response_status: callback[:last_response_status],
+      last_response_status_code: callback[:last_response_code],
       request: callback[:last_payload_sent],
       response: callback[:last_response_received]
     }

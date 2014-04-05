@@ -10,6 +10,7 @@ class App < Jsonatra::Base
       {
         group_id: group[:id],
         group_name: group[:name],
+        timezone: group[:timezone],
         user_balance: group[:balance],
         max_balance: balance[:max],
         min_balance: balance[:min]
@@ -200,6 +201,7 @@ class App < Jsonatra::Base
 
     {
       group_name: group[:name],
+      timezone: group[:timezone],
       user_balance: membership[:balance],
       min_balance: balance[:min],
       max_balance: balance[:max],

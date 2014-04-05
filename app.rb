@@ -68,9 +68,9 @@ class App < Jsonatra::Base
     SQL[:memberships].where(:group_id => group_id, :user_id => user_id)
   end
 
-  def get_recent_transactions(group_id, user_id, tz)
+  def get_recent_transactions(group_id, user_id, tz, limit=20)
     query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
-      .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(Sequel.desc(:date))
+      .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(Sequel.desc(:date)).limit(limit)
 
     query.map do |t|
       format_transaction(t, tz)
@@ -86,7 +86,7 @@ class App < Jsonatra::Base
     end
   end
 
-  def format_transaction(transaction, tz)
+  def format_transaction(transaction, tz, use_logged_in_user=true)
     if @users[transaction[:from_user_id]].nil?
       @users[transaction[:from_user_id]] = SQL[:users].first :id => transaction[:from_user_id]
     end
@@ -97,7 +97,7 @@ class App < Jsonatra::Base
     from = @users[transaction[:from_user_id]]
     to = @users[transaction[:to_user_id]]
 
-    summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffee#{transaction[:amount] == 1 ? '' : 's'} for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
+    summary = "#{(use_logged_in_user and from[:id] == @user[:id]) ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffee#{transaction[:amount] == 1 ? '' : 's'} for #{(use_logged_in_user and to[:id] == @user[:id]) ? 'you' : to[:display_name]}"
 
     {
       transaction_id: transaction[:id],
