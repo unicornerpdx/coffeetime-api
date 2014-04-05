@@ -10,6 +10,7 @@ gem 'jwt'
 gem 'logger'
 gem 'rake'
 gem 'octokit'
+gem 'timezone'
 
 gem 'puma'
 gem 'shotgun'

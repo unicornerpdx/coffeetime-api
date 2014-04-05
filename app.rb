@@ -47,6 +47,14 @@ class App < Jsonatra::Base
     @users = {}
   end
 
+  def timezone_from_param
+    begin
+      timezone = Timezone::Zone.new :zone => params['timezone']
+    rescue Timezone::Error::InvalidZone
+      param_error :timezone, 'invalid', 'Invalid timezone specified'
+    end
+  end
+
   def group_balance(group_id)
     SQL[:memberships].select(Sequel.function(:max, :balance), Sequel.function(:min, :balance)).where(:group_id => group_id).first
   end
@@ -55,20 +63,26 @@ class App < Jsonatra::Base
     SQL[:memberships].where(:group_id => group_id, :user_id => user_id)
   end
 
-  def get_recent_transactions(group_id, user_id)
-    query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude')).where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(:date)
+  def get_recent_transactions(group_id, user_id, tz)
+    query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
+      .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(:date)
     transactions = []
     query.each do |t|
-      transactions << format_transaction(t)
+      transactions << format_transaction(t, tz)
     end
     transactions
   end
 
-  def format_date(date)
-    date
+  def format_date(date, tz)
+    if date
+      timezone = Timezone::Zone.new :zone => tz
+      date.to_time.localtime(timezone.utc_offset).iso8601
+    else
+      nil
+    end
   end
 
-  def format_transaction(transaction)
+  def format_transaction(transaction, tz)
     if @users[transaction[:from_user_id]].nil?
       @users[transaction[:from_user_id]] = SQL[:users].first :id => transaction[:from_user_id]
     end
@@ -82,7 +96,7 @@ class App < Jsonatra::Base
     summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffees for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
 
     {
-      date: format_date(transaction[:date]),
+      date: format_date(transaction[:date], tz),
       from_user_id: transaction[:from_user_id],
       to_user_id: transaction[:to_user_id],
       amount: transaction[:amount],
@@ -91,7 +105,7 @@ class App < Jsonatra::Base
       latitude: transaction[:latitude],
       longitude: transaction[:longitude],
       accuracy: transaction[:accuracy],
-      location_date: format_date(transaction[:location_date]),
+      location_date: format_date(transaction[:location_date], tz),
       summary: summary
     }
   end

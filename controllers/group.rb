@@ -66,6 +66,12 @@ class App < Jsonatra::Base
     param_error :github_team_id, 'missing', 'github_team_id is required' if params['github_team_id'].blank?
     param_error :name, 'missing', 'name is required' if params['name'].blank?
 
+    # Validate the timezone
+    params['timezone'] = 'America/Los_Angeles' if params['timezone'].blank?
+    timezone = timezone_from_param
+
+    halt if response.error?
+
     # Check if the user is a member of the team
     if !@github.team_member?(params['github_team_id'], @user[:username])
       param_error :github_team_id, 'invalid', 'You are not a member of this team'
@@ -86,6 +92,7 @@ class App < Jsonatra::Base
     SQL[:groups] << {
       github_team_id: params['github_team_id'],
       name: params['name'],
+      timezone: timezone.zone,
       date_updated: DateTime.now,
       date_created: DateTime.now
     }
@@ -101,7 +108,8 @@ class App < Jsonatra::Base
 
     {
       group_id: group[:id],
-      group_name: group[:name]
+      group_name: group[:name],
+      timezone: @group[:timezone]
     }
   end
 
@@ -110,6 +118,23 @@ class App < Jsonatra::Base
     # Also updates the list of members in the group from the Github team
     require_auth
     require_group
+
+    if !params['timezone'].blank?
+      begin
+        timezone = Timezone::Zone.new :zone => params['timezone']
+      rescue Timezone::Error::InvalidZone
+        param_error :timezone, 'invalid', 'Invalid timezone specified'
+      end
+    end
+
+    # Update name or timezone
+    if !params['timezone'].blank? or !params['name'].blank?
+      update = {}
+      update[:name] = params['name'] if !params['name'].blank?
+      update[:timezone] = timezone.zone if !params['timezone'].blank?
+      SQL[:groups].where(:id => @group[:id]).update(update)
+      @group = SQL[:groups].first :id => @group[:id]
+    end
 
     # Add any new people from the Github team
     github_member_ids = []
@@ -129,7 +154,8 @@ class App < Jsonatra::Base
 
     {
       group_id: @group[:id],
-      group_name: @group[:name]
+      group_name: @group[:name],
+      timezone: @group[:timezone]
     }
   end
 
@@ -157,7 +183,7 @@ class App < Jsonatra::Base
   def group_info(group, user, membership=nil)
     membership = get_membership(group[:id], user[:id]).first if membership.nil?
     balance = group_balance group[:id]
-    transactions = get_recent_transactions group[:id], user[:id]
+    transactions = get_recent_transactions group[:id], user[:id], group[:timezone]
 
     {
       group_name: group[:name],

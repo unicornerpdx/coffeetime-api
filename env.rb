@@ -1,3 +1,5 @@
+ENV['TZ'] = 'UTC'
+
 unless File.exists? './config.yml'
   puts 'Please provide a config.yml file.'
   exit false
