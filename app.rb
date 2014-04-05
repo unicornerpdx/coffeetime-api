@@ -39,13 +39,61 @@ class App < Jsonatra::Base
     halt if response.error?
 
     # Check if the user is a member of the group
-    @membership = SQL[:memberships].first :group_id => @group[:id], :user_id => @user[:id]
+    @membership = get_membership(@group[:id], @user[:id]).first
     param_error :group_id, 'forbidden', 'user not a member of this group' if @membership.nil?
     halt if response.error?
+
+    # Cache users being returned in a list
+    @users = {}
   end
 
   def group_balance(group_id)
     SQL[:memberships].select(Sequel.function(:max, :balance), Sequel.function(:min, :balance)).where(:group_id => group_id).first
+  end
+
+  def get_membership(group_id, user_id) 
+    SQL[:memberships].where(:group_id => group_id, :user_id => user_id)
+  end
+
+  def get_recent_transactions(group_id, user_id)
+    query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude')).where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(:date)
+    transactions = []
+    query.each do |t|
+      transactions << format_transaction(t)
+    end
+    transactions
+  end
+
+  def format_date(date)
+    date
+  end
+
+  def format_transaction(transaction)
+    if @users[transaction[:from_user_id]].nil?
+      @users[transaction[:from_user_id]] = SQL[:users].first :id => transaction[:from_user_id]
+    end
+    if @users[transaction[:to_user_id]].nil?
+      @users[transaction[:to_user_id]] = SQL[:users].first :id => transaction[:to_user_id]
+    end
+
+    from = @users[transaction[:from_user_id]]
+    to = @users[transaction[:to_user_id]]
+
+    summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffees for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
+
+    {
+      date: format_date(transaction[:date]),
+      from_user_id: transaction[:from_user_id],
+      to_user_id: transaction[:to_user_id],
+      amount: transaction[:amount],
+      note: transaction[:note],
+      created_by: transaction[:created_by],
+      latitude: transaction[:latitude],
+      longitude: transaction[:longitude],
+      accuracy: transaction[:accuracy],
+      location_date: format_date(transaction[:location_date]),
+      summary: summary
+    }
   end
 
   get '/' do

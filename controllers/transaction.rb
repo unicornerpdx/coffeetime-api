@@ -60,19 +60,17 @@ class App < Jsonatra::Base
         created_by: @user[:id],
         from_user_id: from_user_id,
         to_user_id: to_user_id,
-        amount: amount,
+        amount: amount.abs,
         note: params['note'],
         date_updated: DateTime.now,
         date_created: DateTime.now
       }.merge(location)
       # Update the balances for the two users
-      SQL[:memberships].where(:group_id => @group[:id], :user_id => @user[:id]).update(:balance => Sequel.+(:balance, amount))
-      SQL[:memberships].where(:group_id => @group[:id], :user_id => other_user[:id]).update(:balance => Sequel.-(:balance, amount))
+      get_membership(@group[:id], @user[:id]).update(:balance => Sequel.+(:balance, amount))
+      get_membership(@group[:id], @user[:id]).update(:balance => Sequel.-(:balance, amount))
     end
 
-    {
-      # see group/info
-    }
+    group_info @group, @user, @membership
   end
 
   get '/transaction/history' do

@@ -25,36 +25,7 @@ class App < Jsonatra::Base
   get '/group/info' do
     require_auth
     require_group
-
-    # TODO: get user balance for the group
-
-    # TODO: get list of recent transactions the auth'd user has participated in the group
-
-    {
-      group_name: "Esri PDX",
-      user_balance: 10,
-      users: [
-        {
-          user_id: 0,
-          username: 'bob',
-          display_name: 'Bob',
-          avatar_url: 'http://gravatar.com/foo'
-        }
-      ],
-      transactions: [
-        {
-          date: "2014-03-27T09:00:00-0700",
-          from_user_id: 13,
-          to_user_id: 14,
-          latitude: 45,
-          longitude: -122,
-          accuracy: 1000,
-          amount: 3,
-          note: "Sucker",
-          created_by: 13
-        }
-      ]
-    }
+    group_info @group, @user, @balance
   end
 
   def add_user_to_group_from_github(member, group)
@@ -72,7 +43,7 @@ class App < Jsonatra::Base
       user = SQL[:users].first :github_user_id => member.id.to_s
     end
     # Add the member to the group if they are not already
-    membership = SQL[:memberships].first :user_id => user[:id], :group_id => group[:id]
+    membership = get_membership(group[:id], user[:id]).first
     if !membership
       SQL[:memberships] << {
         group_id: group[:id],
@@ -85,7 +56,7 @@ class App < Jsonatra::Base
     else
       # Re-activate the user if there was already a membership for them
       if membership[:active] == false
-        SQL[:memberships].where(:user_id => user[:id], :group_id => group[:id]).update(:active => true)
+        get_membership(group[:id], user[:id]).first.update(:active => true)
       end
     end
   end
@@ -180,6 +151,28 @@ class App < Jsonatra::Base
     {
       teams: teams,
       number: teams.length
+    }
+  end
+
+  def group_info(group, user, membership=nil)
+    membership = get_membership(group[:id], user[:id]).first if membership.nil?
+    balance = group_balance group[:id]
+    transactions = get_recent_transactions group[:id], user[:id]
+
+    {
+      group_name: group[:name],
+      user_balance: membership[:balance],
+      min_balance: balance[:min],
+      max_balance: balance[:max],
+      users: [
+        {
+          user_id: 0,
+          username: 'bob',
+          display_name: 'Bob',
+          avatar_url: 'http://gravatar.com/foo'
+        }
+      ],
+      transactions: transactions
     }
   end
 
