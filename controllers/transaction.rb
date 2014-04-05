@@ -31,6 +31,8 @@ class App < Jsonatra::Base
       # Your balance goes down by 10 (@user += amount) (because amount is negative)
       from_user_id = other_user[:id]
       to_user_id = @user[:id]
+      # This is the notification text to send to the other user
+      notification = "You bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
     else
       # Screen is green
       # "Jane owes you 10 coffees"
@@ -40,6 +42,8 @@ class App < Jsonatra::Base
       # Jane's balance goes down by 10 (other_user -= amount) 
       from_user_id = @user[:id]
       to_user_id = other_user[:id]
+      # This is the notification text to send to the other user
+      notification = "#{@user[:display_name]} bought you #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
     end
 
     SQL.transaction do
@@ -72,6 +76,9 @@ class App < Jsonatra::Base
 
     # Reload the membership to get the updated balance for the group
     @membership = get_membership(@group[:id], @user[:id]).first
+
+    # Send the other user a push notification
+    Pushie.send other_user, notification
 
     group_info @group, @user, @membership
   end
