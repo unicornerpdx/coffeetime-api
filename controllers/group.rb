@@ -5,10 +5,9 @@ class App < Jsonatra::Base
 
     query = SQL[:groups].select(:groups__id, :groups__name, :memberships__balance).join(:memberships, :group_id => :id).where(:memberships__user_id => @user[:id])
 
-    groups = []
-    query.each do |group|
+    groups = query.map do |group|
       balance = group_balance(group[:id])
-      groups << {
+      {
         group_id: group[:id],
         group_name: group[:name],
         user_balance: group[:balance],
@@ -53,10 +52,12 @@ class App < Jsonatra::Base
         date_updated: DateTime.now,
         date_created: DateTime.now
       }
+      return format_user user # Return the user if they were added 
     else
       # Re-activate the user if there was already a membership for them
       if membership[:active] == false
-        get_membership(group[:id], user[:id]).first.update(:active => true)
+        get_membership(group[:id], user[:id]).update(:active => true)
+        return format_user user # Return the user if they were added 
       end
     end
   end
@@ -137,25 +138,31 @@ class App < Jsonatra::Base
     end
 
     # Add any new people from the Github team
+    added = []
     github_member_ids = []
     members = @github.team_members @group[:github_team_id]
     members.each do |member|
       github_member_ids << member.id.to_s
-      add_user_to_group_from_github member, @group
+      result = add_user_to_group_from_github(member, @group)
+      added << result if result
     end
 
     # Check existing member list and deactivate them if they are not in the Github team anymore
-    members = SQL[:memberships].select(:memberships__id, :users__github_user_id).join(:users, :id => :user_id).where(:group_id => @group[:id])
+    removed = []
+    members = SQL[:memberships].select(:memberships__id, :memberships__user_id, :users__github_user_id).join(:users, :id => :user_id).where(:group_id => @group[:id], :active => true)
     members.each do |member|
       if !github_member_ids.include? member[:github_user_id]
         SQL[:memberships].where(:id => member[:id]).update(:active => false)
+        removed << format_user(SQL[:users].first(:id => member[:user_id]))
       end
     end
 
     {
       group_id: @group[:id],
       group_name: @group[:name],
-      timezone: @group[:timezone]
+      timezone: @group[:timezone],
+      users_added: added,
+      users_removed: removed
     }
   end
 
@@ -164,9 +171,8 @@ class App < Jsonatra::Base
 
     github_teams = @github.user_teams :per_page => 100
 
-    teams = []
-    github_teams.each do |team|
-      teams << {
+    teams = github_teams.map do |team|
+      {
         github_id: team.id,
         name: team.name,
         org: team.organization.login,
@@ -184,20 +190,13 @@ class App < Jsonatra::Base
     membership = get_membership(group[:id], user[:id]).first if membership.nil?
     balance = group_balance group[:id]
     transactions = get_recent_transactions group[:id], user[:id], group[:timezone]
-
+jj @users
     {
       group_name: group[:name],
       user_balance: membership[:balance],
       min_balance: balance[:min],
       max_balance: balance[:max],
-      users: [
-        {
-          user_id: 0,
-          username: 'bob',
-          display_name: 'Bob',
-          avatar_url: 'http://gravatar.com/foo'
-        }
-      ],
+      users: @users.values.map{|u| format_user(u, group, get_membership(group[:id], u[:id]).first)},
       transactions: transactions
     }
   end

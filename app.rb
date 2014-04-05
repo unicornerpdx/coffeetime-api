@@ -44,6 +44,7 @@ class App < Jsonatra::Base
     halt if response.error?
 
     # Cache users being returned in a list
+    # This also clears the cache between each request
     @users = {}
   end
 
@@ -65,12 +66,11 @@ class App < Jsonatra::Base
 
   def get_recent_transactions(group_id, user_id, tz)
     query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
-      .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(:date)
-    transactions = []
-    query.each do |t|
-      transactions << format_transaction(t, tz)
+      .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(Sequel.desc(:date))
+
+    query.map do |t|
+      format_transaction(t, tz)
     end
-    transactions
   end
 
   def format_date(date, tz)
@@ -96,6 +96,7 @@ class App < Jsonatra::Base
     summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffees for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
 
     {
+      transaction_id: transaction[:id],
       date: format_date(transaction[:date], tz),
       from_user_id: transaction[:from_user_id],
       to_user_id: transaction[:to_user_id],
@@ -108,6 +109,27 @@ class App < Jsonatra::Base
       location_date: format_date(transaction[:location_date], tz),
       summary: summary
     }
+  end
+
+  def format_user(user, group=nil, membership=nil)
+    if group
+      g_balance = group_balance(group[:id])
+      balance = {
+        user_balance: membership[:balance],
+        max_balance: g_balance[:max],
+        min_balance: g_balance[:min],
+        active: membership[:active]
+      }
+    else
+      balance = {}
+    end
+
+    {
+      user_id: user[:id],
+      username: user[:username],
+      display_name: user[:display_name],
+      avatar_url: user[:avatar_url]
+    }.merge(balance)
   end
 
   get '/' do
