@@ -93,7 +93,7 @@ class App < Jsonatra::Base
     from = @users[transaction[:from_user_id]]
     to = @users[transaction[:to_user_id]]
 
-    summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffees for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
+    summary = "#{from[:id] == @user[:id] ? 'You' : from[:display_name]} bought #{transaction[:amount]} coffee#{transaction[:amount] == 1 ? '' : 's'} for #{to[:id] == @user[:id] ? 'you' : to[:display_name]}"
 
     {
       transaction_id: transaction[:id],

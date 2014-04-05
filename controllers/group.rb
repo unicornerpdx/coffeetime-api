@@ -190,7 +190,14 @@ class App < Jsonatra::Base
     membership = get_membership(group[:id], user[:id]).first if membership.nil?
     balance = group_balance group[:id]
     transactions = get_recent_transactions group[:id], user[:id], group[:timezone]
-jj @users
+
+    # Running get_recent_transactions sets the variable @users with any users that participated in the transaction even if they are inactive
+    # Now we also need to include all active members of the group
+    active_users = SQL[:users].select(Sequel.lit('users.*')).join(:memberships, :user_id => :id).where(:memberships__group_id => group[:id], :active => true)
+    active_users.each do |u|
+      @users[u[:id]] = u
+    end
+
     {
       group_name: group[:name],
       user_balance: membership[:balance],

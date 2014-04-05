@@ -67,8 +67,11 @@ class App < Jsonatra::Base
       }.merge(location)
       # Update the balances for the two users
       get_membership(@group[:id], @user[:id]).update(:balance => Sequel.+(:balance, amount))
-      get_membership(@group[:id], @user[:id]).update(:balance => Sequel.-(:balance, amount))
+      get_membership(@group[:id], other_user[:id]).update(:balance => Sequel.-(:balance, amount))
     end
+
+    # Reload the membership to get the updated balance for the group
+    @membership = get_membership(@group[:id], @user[:id]).first
 
     group_info @group, @user, @membership
   end
