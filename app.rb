@@ -9,15 +9,19 @@ class App < Jsonatra::Base
   end
 
   def require_auth
-    param_error :authorization, 'missing', 'Authorization header required' if request.env['HTTP_AUTHORIZATION'].nil? or request.env['HTTP_AUTHORIZATION'].empty?
+    header_error :authorization, 'missing', 'Authorization header required' if request.env['HTTP_AUTHORIZATION'].nil? or request.env['HTTP_AUTHORIZATION'].empty?
+    halt if response.error?
+
     auth = request.env['HTTP_AUTHORIZATION'].match /Bearer (.+)/
-    param_error :authorization, 'invalid', 'Bearer authorization header required' if auth.nil?
+    header_error :authorization, 'invalid', 'Bearer authorization header required' if auth.nil?
+    halt if response.error?
+
     access_token = auth[1]
     begin
       @token = JWT.decode(access_token, SiteConfig['secret'])
       puts "Auth: #{@token.inspect}"
     rescue 
-      param_error :authorization, 'invalid', 'Access token was invalid'
+      header_error :authorization, 'invalid', 'Access token was invalid'
     end
     halt if response.error?
 
