@@ -13,14 +13,14 @@ class App < Jsonatra::Base
 
   # The app posts the auth code to here to get an access token
   post '/auth' do
-    param_error :github_auth_code, 'missing', 'github_auth_code required' if params[:github_auth_code].blank?
+    param_error :code, 'missing', 'code required' if params[:code].blank?
     halt if response.error?
 
     client = HTTPClient.new
     result = client.post "https://github.com/login/oauth/access_token", {
       :client_id => SiteConfig['github']['client_id'],
       :client_secret => SiteConfig['github']['client_secret'],
-      :code => params[:github_auth_code],
+      :code => params[:code],
       :redirect_uri => SiteConfig['github']['redirect_uri']
     }, {
       'Accept' => 'application/json'
@@ -33,8 +33,8 @@ class App < Jsonatra::Base
     github_token = JSON.parse result.body
 
     param_error :github, 'bad_response', 'Github API did not return JSON' if github_token.nil?
-    param_error :github_auth_code, 'invalid_code', github_token['error_description'] if github_token['error_description']
-    param_error :github_auth_code, 'bad_response', 'Github API did not return an access token' if github_token['access_token'].nil?
+    param_error :code, 'invalid_code', github_token['error_description'] if github_token['error_description']
+    param_error :code, 'bad_response', 'Github API did not return an access token' if github_token['access_token'].nil?
 
     halt if response.error?
 
