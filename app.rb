@@ -47,6 +47,14 @@ class App < Jsonatra::Base
     param_error :group_id, 'forbidden', 'user not a member of this group' if @membership.nil?
     halt if response.error?
 
+    # Mark the group as active and cache the user's github token for the group
+    # so that the cron job has a Github access token it can use when running outside
+    # the context of a user.
+    SQL[:groups].where(:id => @group[:id]).update({
+      :last_active_date => DateTime.now,
+      :last_active_github_token => @token['github_access_token']
+    })
+
     # Cache users being returned in a list
     # This also clears the cache between each request
     @users = {}

@@ -1,6 +1,6 @@
 class Pushie
 
-  def self.send(user, msg) 
+  def self.send(user, msg, data={}) 
     client = HTTPClient.new
     devices = SQL[:devices].where(:user_id => user[:id])
     devices.each do |device|
@@ -17,7 +17,7 @@ class Pushie
           notification: {
             alert: msg,
             sound: 'default'
-          },
+          }.merge(data),
           timeout: 1000
         }.to_json, {
           'Content-Type' => 'application/json'
