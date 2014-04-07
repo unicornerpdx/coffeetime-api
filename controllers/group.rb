@@ -28,41 +28,6 @@ class App < Jsonatra::Base
     group_info @group, @user, @balance
   end
 
-  def add_user_to_group_from_github(member, group)
-    user = SQL[:users].first :github_user_id => member.id.to_s
-    if !user
-      # Create user records for any users not already in the database
-      SQL[:users] << {
-        github_user_id: member.id.to_s,
-        username: member.login,
-        display_name: member.login,
-        avatar_url: member.rels[:avatar].href,
-        date_updated: DateTime.now,
-        date_created: DateTime.now
-      }
-      user = SQL[:users].first :github_user_id => member.id.to_s
-    end
-    # Add the member to the group if they are not already
-    membership = get_membership(group[:id], user[:id]).first
-    if !membership
-      SQL[:memberships] << {
-        group_id: group[:id],
-        user_id: user[:id],
-        balance: 0,
-        active: true,
-        date_updated: DateTime.now,
-        date_created: DateTime.now
-      }
-      return format_user user # Return the user if they were added 
-    else
-      # Re-activate the user if there was already a membership for them
-      if membership[:active] == false
-        get_membership(group[:id], user[:id]).update(:active => true)
-        return format_user user # Return the user if they were added 
-      end
-    end
-  end
-
   post '/group/create' do
     require_auth
     param_error :github_team_id, 'missing', 'github_team_id is required' if params['github_team_id'].blank?
@@ -105,7 +70,7 @@ class App < Jsonatra::Base
     members = @github.team_members params['github_team_id']
 
     members.each do |member|
-      add_user_to_group_from_github member, group
+      GroupHelper.add_user_to_group_from_github member, group
     end
 
     {
@@ -138,32 +103,14 @@ class App < Jsonatra::Base
       @group = SQL[:groups].first :id => @group[:id]
     end
 
-    # Add any new people from the Github team
-    added = []
-    github_member_ids = []
-    members = @github.team_members @group[:github_team_id]
-    members.each do |member|
-      github_member_ids << member.id.to_s
-      result = add_user_to_group_from_github(member, @group)
-      added << result if result
-    end
-
-    # Check existing member list and deactivate them if they are not in the Github team anymore
-    removed = []
-    members = SQL[:memberships].select(:memberships__id, :memberships__user_id, :users__github_user_id).join(:users, :id => :user_id).where(:group_id => @group[:id], :active => true)
-    members.each do |member|
-      if !github_member_ids.include? member[:github_user_id]
-        SQL[:memberships].where(:id => member[:id]).update(:active => false)
-        removed << format_user(SQL[:users].first(:id => member[:user_id]))
-      end
-    end
+    result = GroupHelper.update_group_members_from_github @github, @group
 
     {
       group_id: @group[:id],
       group_name: @group[:name],
       timezone: @group[:timezone],
-      users_added: added,
-      users_removed: removed
+      users_added: result[:added],
+      users_removed: result[:removed]
     }
   end
 
