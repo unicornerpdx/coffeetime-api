@@ -52,7 +52,7 @@ class App < Jsonatra::Base
     if user
       SQL[:users].where(:id => user[:id]).update({
         username: github_user['login'],
-        display_name: github_user['name'],
+        display_name: github_user['login'],
         avatar_url: github_user['avatar_url'],
         date_updated: DateTime.now
       })
@@ -60,7 +60,7 @@ class App < Jsonatra::Base
       SQL[:users] << {
         github_user_id: github_user['id'].to_s,
         username: github_user['login'],
-        display_name: github_user['name'],
+        display_name: github_user['login'],
         avatar_url: github_user['avatar_url'],
         date_updated: DateTime.now,
         date_created: DateTime.now
