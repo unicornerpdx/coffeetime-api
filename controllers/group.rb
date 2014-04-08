@@ -76,7 +76,7 @@ class App < Jsonatra::Base
     {
       group_id: group[:id],
       group_name: group[:name],
-      timezone: @group[:timezone]
+      timezone: group[:timezone]
     }
   end
 
