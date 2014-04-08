@@ -1,0 +1,12 @@
+development:
+  github:
+    client_id: 
+    client_secret: 
+    redirect_uri: 'http://coffee.dev/auth/callback'
+  secret: '1234567890'
+  pushlet: 'http://localhost:8080'
+  db: 
+    host: 'localhost'
+    port: 5432
+    user: 'coffee'
+    name: 'coffee'
