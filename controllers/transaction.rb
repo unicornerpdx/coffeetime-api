@@ -93,16 +93,6 @@ class App < Jsonatra::Base
     if transaction_id
       transaction_url = "coffeetime://transaction?group_id=#{@group[:id]}&transaction_id=#{transaction_id}"
 
-      # Send the authenticating user a push with their updated balance but no message
-      user_balance = user_membership.first[:balance]
-      data = {
-        :badge => (user_balance < 0 ? user_balance.abs : 0),
-        :group_id => @group[:id],
-        :transaction_id => transaction_id,
-        :balance => user_balance
-      }
-      Pushie.send @user, nil, data
-
       # Send the other user a push notification with a message and their updated balance
       other_user_balance = other_user_membership.first[:balance]
       data = {
