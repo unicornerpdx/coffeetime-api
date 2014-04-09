@@ -96,7 +96,7 @@ class App < Jsonatra::Base
       # Send the authenticating user a push with their updated balance but no message
       user_balance = user_membership.first[:balance]
       data = {
-        :badge => (user_balance < 0 ? user_balance : 0),
+        :badge => (user_balance < 0 ? user_balance.abs : 0),
         :url => transaction_url
       }
       Pushie.send @user, nil, data
@@ -104,7 +104,7 @@ class App < Jsonatra::Base
       # Send the other user a push notification with a message and their updated balance
       other_user_balance = other_user_membership.first[:balance]
       data = {
-        :badge => (other_user_balance < 0 ? other_user_balance : 0),
+        :badge => (other_user_balance < 0 ? other_user_balance.abs : 0),
         :url => transaction_url
       }
       Pushie.send other_user, notification, data
