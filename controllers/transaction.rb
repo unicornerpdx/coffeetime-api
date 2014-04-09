@@ -97,7 +97,6 @@ class App < Jsonatra::Base
       user_balance = user_membership.first[:balance]
       data = {
         :badge => (user_balance < 0 ? user_balance.abs : 0),
-        :url => transaction_url,
         :group_id => @group[:id],
         :transaction_id => transaction_id,
         :balance => user_balance
@@ -108,7 +107,6 @@ class App < Jsonatra::Base
       other_user_balance = other_user_membership.first[:balance]
       data = {
         :badge => (other_user_balance < 0 ? other_user_balance.abs : 0),
-        :url => transaction_url,
         :group_id => @group[:id],
         :transaction_id => transaction_id,
         :balance => user_balance
