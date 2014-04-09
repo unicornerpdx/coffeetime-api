@@ -16,5 +16,5 @@ end
 
 db = SiteConfig['db']
 SQL = Sequel.postgres(db['name'], :user => db['user'], :password => db['pass'], :host => db['host'], :port => db['port'])
-SQL.loggers << Logger.new($stdout)
+SQL.loggers << Logger.new($stdout) if ENV['RACK_ENV'] == 'development'
 

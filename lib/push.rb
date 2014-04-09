@@ -17,6 +17,8 @@ class Pushie
           notification = data
         end
 
+        jj notification
+
         client.post "#{SiteConfig['pushlet']}/message/apn", {
           appId: 'coffeetime.io',
           deviceId: device[:token],
