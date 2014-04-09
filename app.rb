@@ -19,7 +19,7 @@ class App < Jsonatra::Base
     access_token = auth[1]
     begin
       @token = JWT.decode(access_token, SiteConfig['secret'])
-      puts "Auth: #{@token.inspect}"
+      # puts "Auth: #{@token.inspect}"
     rescue 
       header_error :authorization, 'invalid', 'Access token was invalid'
     end
