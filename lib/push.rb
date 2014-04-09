@@ -8,16 +8,22 @@ class Pushie
 
         puts "Sending push to #{user[:username]} (#{device[:token]})"
 
+        if msg
+          notification = {
+            alert: msg,
+            sound: 'default'
+          }.merge(data)
+        else
+          notification = data
+        end
+
         client.post "#{SiteConfig['pushlet']}/message/apn", {
           appId: 'coffeetime.io',
           deviceId: device[:token],
           mode: device[:token_type].gsub(/apns_/,''),
           cert: File.open('./lib/push.cert', 'rb') { |f| f.read },
           key: File.open('./lib/push.key', 'rb') { |f| f.read },
-          notification: {
-            alert: msg,
-            sound: 'default'
-          }.merge(data),
+          notification: notification,
           timeout: 1000
         }.to_json, {
           'Content-Type' => 'application/json'

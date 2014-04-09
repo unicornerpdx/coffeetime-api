@@ -5,6 +5,7 @@ class App < Jsonatra::Base
     require_group
 
     param_error :user_id, 'missing', 'user_id required' if params['user_id'].blank?
+    param_error :amount, 'missing', 'amount is required' if params['amount'].blank? or params['amount'] == 0
 
     other_user = SQL[:users].where(:id => params['user_id']).first
     param_error :user_id, 'invalid', 'user_id not found' if other_user.nil?
@@ -14,7 +15,6 @@ class App < Jsonatra::Base
     param_error :user_id, 'invalid', 'user_id is not an active member of this group' if membership.nil?
     halt if response.error?
 
-    param_error :amount, 'missing', 'amount is required' if params['amount'].blank? or params['amount'] == 0
     param_error :latitude, 'invalid', 'latitude is out of range (must be -90 to 90)' if !params['latitude'].blank? and !(-90..90).include?(params['latitude'].to_i)
     param_error :longitude, 'invalid', 'longitude is out of range (must be -180 to 180)' if !params['longitude'].blank? and !(-180..180).include?(params['longitude'].to_i)
     param_error :accuracy, 'invalid', 'accuracy is out of range (must be greater than 0)' if !params['accuracy'].blank? and params['accuracy'].to_i < 0
@@ -53,6 +53,8 @@ class App < Jsonatra::Base
     end
 
     transaction_id = false
+    user_membership = nil
+    other_user_membership = nil
 
     SQL.transaction do
       if params['latitude']
@@ -79,16 +81,33 @@ class App < Jsonatra::Base
       }.merge(location))
       puts transaction_id.inspect
       # Update the balances for the two users
-      get_membership(@group[:id], @user[:id]).update(:balance => Sequel.+(:balance, amount))
-      get_membership(@group[:id], other_user[:id]).update(:balance => Sequel.-(:balance, amount))
+      user_membership = get_membership(@group[:id], @user[:id])
+      user_membership.update(:balance => Sequel.+(:balance, amount))
+      other_user_membership = get_membership(@group[:id], other_user[:id])
+      other_user_membership.update(:balance => Sequel.-(:balance, amount))
     end
 
     # Reload the membership to get the updated balance for the group
     @membership = get_membership(@group[:id], @user[:id]).first
 
     if transaction_id
-      # Send the other user a push notification
-      Pushie.send other_user, notification
+      transaction_url = "coffeetime://transaction?group_id=#{@group[:id]}&transaction_id=#{transaction_id}"
+
+      # Send the authenticating user a push with their updated balance but no message
+      user_balance = user_membership.first[:balance]
+      data = {
+        :badge => (user_balance < 0 ? user_balance : 0),
+        :url => transaction_url
+      }
+      Pushie.send @user, nil, data
+
+      # Send the other user a push notification with a message and their updated balance
+      other_user_balance = other_user_membership.first[:balance]
+      data = {
+        :badge => (other_user_balance < 0 ? other_user_balance : 0),
+        :url => transaction_url
+      }
+      Pushie.send other_user, notification, data
 
       # Send to the callback URLs registered for this group
       callback_params = {}
@@ -117,14 +136,15 @@ class App < Jsonatra::Base
     require_auth
     require_group
 
+    transactions = get_transactions @group[:id], @group[:timezone]
+
     # from_id
     # to_id
     # limit
 
     {
-      transactions: [
-
-      ]
+      users: @users.values.map{|u| format_user(u, @group, get_membership(@group[:id], u[:id]).first)},
+      transactions: transactions
     }
   end
 
