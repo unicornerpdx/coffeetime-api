@@ -4,9 +4,24 @@ class Pushie
     client = HTTPClient.new
     devices = SQL[:devices].where(:user_id => user[:id])
     devices.each do |device|
-      if ['apns_production','apns_sandbox'].include? device[:token_type]
+      if ['apns_production','apns_sandbox','gcm'].include? device[:token_type]
 
-        puts "Sending push to #{user[:username]} (#{device[:token]})"
+        puts "Sending push to #{user[:username]} (#{device[:token_type]} #{device[:token]})"
+
+        if device[:token_type] == 'gcm'
+          path = "gcm"
+          provider = {
+            mode: 'production',
+            key: File.open('./lib/gcm.key', 'rb') { |f| f.read }
+          }
+        else
+          path = "apn"
+          provider = {
+            mode: device[:token_type].gsub(/apns_/,''),
+            cert: File.open('./lib/push.cert', 'rb') { |f| f.read },
+            key: File.open('./lib/push.key', 'rb') { |f| f.read }
+          }
+        end
 
         if msg
           notification = {
@@ -19,15 +34,12 @@ class Pushie
 
         jj notification
 
-        client.post "#{SiteConfig['pushlet']}/message/apn", {
+        client.post "#{SiteConfig['pushlet']}/message/#{path}", {
           appId: 'coffeetime.io',
           deviceId: device[:token],
-          mode: device[:token_type].gsub(/apns_/,''),
-          cert: File.open('./lib/push.cert', 'rb') { |f| f.read },
-          key: File.open('./lib/push.key', 'rb') { |f| f.read },
           notification: notification,
           timeout: 1000
-        }.to_json, {
+        }.merge(provider).to_json, {
           'Content-Type' => 'application/json'
         }
       end
