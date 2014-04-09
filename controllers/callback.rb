@@ -1,6 +1,6 @@
 class App < Jsonatra::Base
 
-  post '/callback/register' do
+  post '/callback/create' do
     require_auth
     require_group
 
