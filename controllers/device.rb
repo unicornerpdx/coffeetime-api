@@ -13,14 +13,17 @@ class App < Jsonatra::Base
     device = SQL[:devices].first :uuid => params['uuid'], :user_id => @user[:id]
 
     if device
+      puts "Device with this UUID already exists: #{params['uuid']} (User #{@user[:id]})"
       SQL[:devices].where(:id => device[:id]).update({
         token: params['token'],
         token_type: params['token_type'],
         active: true,
         date_updated: DateTime.now
       })
+      device_id = device[:id]
     else
-      SQL[:devices] << {
+      puts "Creating a new device with UUID: #{params['uuid']} (User #{@user[:id]})"
+      device_id = SQL[:devices].insert({
         user_id: @user[:id],
         uuid: params['uuid'],
         token: params['token'],
@@ -28,8 +31,11 @@ class App < Jsonatra::Base
         active: true,
         date_updated: DateTime.now,
         date_created: DateTime.now
-      }
+      })
     end
+
+    # Find any devices with the same UUID and mark all others as inactive
+    SQL[:devices].where(:token => params['token']).exclude(:id => device_id).update(:active => false)
 
     {
       status: 'ok'
