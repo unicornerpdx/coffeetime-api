@@ -99,7 +99,7 @@ class App < Jsonatra::Base
         :badge => (other_user_balance < 0 ? other_user_balance.abs : 0),
         :group_id => @group[:id],
         :transaction_id => transaction_id,
-        :balance => user_balance
+        :balance => other_user_balance
       }
       Pushie.send other_user, notification, data
 

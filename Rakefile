@@ -14,6 +14,12 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
+namespace :debug do
+  task :push, [:username] do |t, args|
+    Pushie.send SQL[:users].first(:username=>args[:username]), 'test pushie!', {badge: 2, group_id:11, transaction_id: 300}
+  end
+end
+
 namespace :db do
 
   task :migrate, [:version] do |t, args|
