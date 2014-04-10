@@ -76,6 +76,15 @@ class App < Jsonatra::Base
     SQL[:memberships].where(:group_id => group_id, :user_id => user_id)
   end
 
+  def get_transaction(transaction_id, tz)
+    query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
+      .where(:id => transaction_id)
+
+    query.map do |t|
+      format_transaction(t, tz)
+    end
+  end
+
   def get_recent_transactions(group_id, user_id, tz, limit=20)
     query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
       .where(:group_id => group_id).where(Sequel.or(:from_user_id => user_id, :to_user_id => user_id)).order(Sequel.desc(:date)).limit(limit)

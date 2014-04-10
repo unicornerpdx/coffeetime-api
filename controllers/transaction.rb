@@ -126,6 +126,28 @@ class App < Jsonatra::Base
     end
   end
 
+  get '/transaction/info' do
+    require_auth
+
+    param_error :transaction_id, 'missing', 'transaction_id required' if params['transaction_id'].blank?
+    halt if response.error?
+
+    transaction = SQL[:transactions].first :id => params['transaction_id']
+    param_error :transaction_id, 'not_found', 'transaction not found' if transaction.nil?
+    halt if response.error?
+
+    membership = get_membership(transaction[:group_id], @user[:id]).first
+    param_error :transaction_id, 'forbidden', 'user is not a member of this group' if membership.nil?
+    halt if response.error?
+
+    group = SQL[:groups].first :id => transaction[:group_id]
+
+    @users = {}
+    transactions = get_transaction params['transaction_id'], group[:timezone]
+
+    group_info group, @user, @balance, transactions
+  end
+
   get '/transaction/history' do
     require_auth
     require_group
