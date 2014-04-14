@@ -62,9 +62,22 @@ class App < Jsonatra::Base
 
   def timezone_from_param
     begin
-      timezone = Timezone::Zone.new :zone => params['timezone']
+      if params['timezone']
+        timezone = Timezone::Zone.new :zone => params['timezone']
+      elsif params['timezone_offset']
+        zone = Timezone.offset_to_zone(params['timezone_offset'].to_i)
+        if zone
+          timezone = Timezone::Zone.new(:zone => zone)
+        else
+          param_error :timezone, 'invalid', 'No timezone was found for the given offset'
+        end
+      end
     rescue Timezone::Error::InvalidZone
       param_error :timezone, 'invalid', 'Invalid timezone specified'
+    rescue => e
+      puts "TIMEZONE ERROR"
+      puts e.inspect
+      param_error :timezone, 'invalid', 'Something went horribly wrong'
     end
   end
 
