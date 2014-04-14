@@ -34,8 +34,8 @@ class App < Jsonatra::Base
       to_user_id = @user[:id]
       to_user = @user
       # This is the notification text to send to the other user
-      notification = "You bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
-      callback_text = "#{other_user[:display_name]} bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
+      notification = "You bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'} in #{@group[:name]}"
+      callback_text = "#{other_user[:display_name]} bought #{@user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'} in #{@group[:name]}"
     else
       # Screen is green
       # "Jane owes you 10 coffees"
@@ -48,8 +48,8 @@ class App < Jsonatra::Base
       to_user_id = other_user[:id]
       to_user = other_user
       # This is the notification text to send to the other user
-      notification = "#{@user[:display_name]} bought you #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
-      callback_text = "#{@user[:display_name]} bought #{other_user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'}"
+      notification = "#{@user[:display_name]} bought you #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'} in #{@group[:name]}"
+      callback_text = "#{@user[:display_name]} bought #{other_user[:display_name]} #{amount.abs} coffee#{amount.abs == 1 ? '' : 's'} in #{@group[:name]}"
     end
 
     transaction_id = false
