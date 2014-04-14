@@ -25,7 +25,7 @@ class App < Jsonatra::Base
   get '/group/info' do
     require_auth
     require_group
-    group_info @group, @user, @balance
+    group_info @group, @user, @membership
   end
 
   post '/group/create' do
@@ -66,20 +66,17 @@ class App < Jsonatra::Base
       date_created: DateTime.now
     }
 
-    group = SQL[:groups].first :github_team_id => params['github_team_id']
+    @group = SQL[:groups].first :github_team_id => params['github_team_id']
 
     # Find all members of the team
     members = @github.team_members params['github_team_id']
 
     members.each do |member|
-      GroupHelper.add_user_to_group_from_github member, group
+      GroupHelper.add_user_to_group_from_github member, @group
     end
 
-    {
-      group_id: group[:id],
-      group_name: group[:name],
-      timezone: group[:timezone]
-    }
+    @users = {}
+    group_info @group, @user
   end
 
   post '/group/update' do
