@@ -152,16 +152,9 @@ class App < Jsonatra::Base
     require_auth
     require_group
 
-    transactions = get_transactions @group[:id], @group[:timezone]
+    transactions = get_transactions @group[:id], @group[:timezone], params
 
-    # from_id
-    # to_id
-    # limit
-
-    {
-      users: @users.values.map{|u| format_user(u, @group, get_membership(@group[:id], u[:id]).first)},
-      transactions: transactions
-    }
+    group_info @group, nil, @balance, transactions
   end
 
 end

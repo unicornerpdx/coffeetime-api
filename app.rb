@@ -95,12 +95,22 @@ class App < Jsonatra::Base
   end
 
   def get_transactions(group_id, tz, opts={})
+    # opts: before_id, after_id, limit
+
     query = SQL[:transactions].select(Sequel.lit('*, ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude'))
       .where(:group_id => group_id)
-      .order(Sequel.desc(:date)).limit(20)
+
+    if opts[:before_id]
+      query = query.where{id < opts[:before_id]}
+    end
+    if opts[:after_id]
+      query = query.where{id > opts[:after_id]}
+    end
+
+    query = query.order(Sequel.desc(:date)).limit(opts[:limit]||20)
 
     query.map do |t|
-      format_transaction(t, tz)
+      format_transaction(t, tz, false)
     end
   end
 

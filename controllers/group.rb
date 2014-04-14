@@ -134,12 +134,12 @@ class App < Jsonatra::Base
     }
   end
 
-  def group_info(group, user, membership=nil, single_transaction=false)
-    membership = get_membership(group[:id], user[:id]).first if membership.nil?
+  def group_info(group, user, membership=nil, transaction_list=false)
+    membership = get_membership(group[:id], user[:id]).first if membership.nil? and !user.nil?
     balance = group_balance group[:id]
-    transactions = get_recent_transactions group[:id], user[:id], group[:timezone] if single_transaction == false
+    recent_transactions = get_recent_transactions group[:id], user[:id], group[:timezone] if transaction_list == false
 
-    if !single_transaction
+    if !transaction_list
       # Running get_recent_transactions sets the variable @users with any users that participated in the transaction even if they are inactive
       # Now we also need to include all active members of the group
       active_users = SQL[:users].select(Sequel.lit('users.*')).join(:memberships, :user_id => :id).where(:memberships__group_id => group[:id], :active => true)
@@ -148,15 +148,22 @@ class App < Jsonatra::Base
       end
     end
 
+    if membership
+      m = {
+        user_balance: membership[:balance]
+      }
+    else
+      m = {}
+    end
+
     {
       group_name: group[:name],
       timezone: group[:timezone],
-      user_balance: membership[:balance],
       min_balance: balance[:min],
       max_balance: balance[:max],
       users: @users.values.map{|u| format_user(u, group, get_membership(group[:id], u[:id]).first)},
-      transactions: (single_transaction ? single_transaction : transactions)
-    }
+      transactions: (transaction_list ? transaction_list : recent_transactions)
+    }.merge(m)
   end
 
 end
