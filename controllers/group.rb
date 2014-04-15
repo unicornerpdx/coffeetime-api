@@ -122,6 +122,12 @@ class App < Jsonatra::Base
       }
     end
 
+    # Remove teams that already have groups created
+    existing_teams = SQL[:groups].select(:github_team_id).all.map{|t| t[:github_team_id].to_i}
+    teams.reject! {|team|
+      existing_teams.include? team[:github_id]
+    }
+
     {
       teams: teams,
       number: teams.length
