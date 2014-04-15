@@ -47,7 +47,7 @@ class App < Jsonatra::Base
     end
 
     # Check if the group already exists
-    group = SQL[:groups].first :github_team_id => params['github_team_id']
+    group = SQL[:groups].first :github_team_id => params['github_team_id'].to_s
 
     if group
       param_error :github_team_id, 'already_exists', 'There is already a group for this Github team!'
@@ -59,14 +59,14 @@ class App < Jsonatra::Base
 
     # Create the group
     SQL[:groups] << {
-      github_team_id: params['github_team_id'],
+      github_team_id: params['github_team_id'].to_s,
       name: params['name'],
       timezone: timezone.zone,
       date_updated: DateTime.now,
       date_created: DateTime.now
     }
 
-    @group = SQL[:groups].first :github_team_id => params['github_team_id']
+    @group = SQL[:groups].first :github_team_id => params['github_team_id'].to_s
 
     # Find all members of the team
     members = @github.team_members params['github_team_id']
