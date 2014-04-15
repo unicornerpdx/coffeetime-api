@@ -11,3 +11,6 @@ CoffeeTime API
 code=xxx</pre>
 * The response will contain an access token and user info which you can store on the device.
 
+## API Docs
+
+See [coffeetime.io/api](http://coffeetime.io/api/) for full API docs.
