@@ -151,6 +151,7 @@ class App < Jsonatra::Base
     end
 
     {
+      group_id: group[:id],
       group_name: group[:name],
       timezone: group[:timezone],
       min_balance: balance[:min],
