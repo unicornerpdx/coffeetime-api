@@ -2,7 +2,7 @@ class Pushie
 
   def self.send(user, msg, data={}) 
     client = HTTPClient.new
-    devices = SQL[:devices].where(:user_id => user[:id])
+    devices = SQL[:devices].where(:user_id => user[:id], :active => true)
     devices.each do |device|
       if ['apns_production','apns_sandbox','gcm'].include? device[:token_type]
 
