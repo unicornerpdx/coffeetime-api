@@ -34,7 +34,7 @@ class Pushie
 
         jj notification
 
-        client.post "#{SiteConfig['pushlet']}/message/#{path}", {
+        response = client.post "#{SiteConfig['pushlet']}/message/#{path}", {
           appId: 'coffeetime.io',
           deviceId: device[:token],
           notification: notification,
@@ -42,6 +42,7 @@ class Pushie
         }.merge(provider).to_json, {
           'Content-Type' => 'application/json'
         }
+        puts response.body
       end
     end
   end
