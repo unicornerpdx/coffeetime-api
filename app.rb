@@ -4,8 +4,11 @@ end
 
 class App < Jsonatra::Base
 
+  @@pushie = Pushie.new 
+  @@callback = Callback.new
+
   configure do
-    set :arrayified_params, [:keys]    
+    set :arrayified_params, [:keys]
   end
 
   def require_auth

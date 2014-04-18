@@ -1,7 +1,7 @@
 class Pushie
+  include Celluloid::IO
 
-  def self.send(user, msg, data={}) 
-    client = HTTPClient.new
+  def push(user, msg, data={}) 
     devices = SQL[:devices].where(:user_id => user[:id], :active => true)
     devices.each do |device|
       if ['apns_production','apns_sandbox','gcm'].include? device[:token_type]
@@ -34,14 +34,14 @@ class Pushie
 
         jj notification
 
-        response = client.post "#{SiteConfig['pushlet']}/message/#{path}", {
+        body = {
           appId: 'coffeetime.io',
           deviceId: device[:token],
           notification: notification,
           timeout: 1000
-        }.merge(provider).to_json, {
-          'Content-Type' => 'application/json'
-        }
+        }.merge(provider).to_json
+        response = HTTP['Content-Type' => 'application/json'].post "#{SiteConfig['pushlet']}/message/#{path}", body: body, socket_class: Celluloid::IO::TCPSocket
+
         puts response.body
       end
     end

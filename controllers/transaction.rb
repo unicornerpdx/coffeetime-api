@@ -91,8 +91,6 @@ class App < Jsonatra::Base
     @membership = get_membership(@group[:id], @user[:id]).first
 
     if transaction_id
-      transaction_url = "coffeetime://transaction?group_id=#{@group[:id]}&transaction_id=#{transaction_id}"
-
       # Send the other user a push notification with a message and their updated balance
       other_user_balance = other_user_membership.first[:balance]
       data = {
@@ -101,7 +99,7 @@ class App < Jsonatra::Base
         :transaction_id => transaction_id,
         :balance => other_user_balance
       }
-      Pushie.send other_user, notification, data
+      @@pushie.async.push other_user, notification, data
 
       # Send to the callback URLs registered for this group
       callback_params = {}
@@ -113,7 +111,7 @@ class App < Jsonatra::Base
       callback_params[:transaction] = format_transaction(SQL[:transactions].first(:id => transaction_id), @group[:timezone], false)
       callback_params[:from_user] = format_user(from_user, @group, get_membership(@group[:id], from_user[:id]).first)
       callback_params[:to_user] = format_user(to_user, @group, get_membership(@group[:id], to_user[:id]).first)
-      Callback.send @group, callback_params
+      @@callback.async.run @group, callback_params
 
       group_info @group, @user, @membership
     else
