@@ -6,6 +6,7 @@ class App < Jsonatra::Base
 
   @@pushie = Pushie.new 
   @@callback = Callback.new
+  @@group_updater = GroupUpdater.new
 
   configure do
     set :arrayified_params, [:keys]

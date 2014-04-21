@@ -75,6 +75,8 @@ class App < Jsonatra::Base
       GroupHelper.add_user_to_group_from_github member, @group
     end
 
+    LOG.debug "create_group [members:#{members.length}]", request.path, @user, @group
+
     @users = {}
     group_info @group, @user
   end
@@ -98,6 +100,7 @@ class App < Jsonatra::Base
     end
 
     result = GroupHelper.update_group_members_from_github @github, @group
+    GroupHelper.send_notifications_about_changed_members @group, result, @@pushie
 
     {
       group_id: @group[:id],
@@ -111,7 +114,7 @@ class App < Jsonatra::Base
   get '/team/list' do
     require_auth
 
-    github_teams = @github.user_teams :per_page => 100
+    github_teams = @github.user_teams 
 
     teams = github_teams.map do |team|
       {

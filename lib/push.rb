@@ -40,9 +40,14 @@ class Pushie
           notification: notification,
           timeout: 1000
         }.merge(provider).to_json
-        response = HTTP['Content-Type' => 'application/json'].post "#{SiteConfig['pushlet']}/message/#{path}", body: body, socket_class: Celluloid::IO::TCPSocket
+        begin
+          response = HTTP['Content-Type' => 'application/json'].post "#{SiteConfig['pushlet']}/message/#{path}", body: body, socket_class: Celluloid::IO::TCPSocket
+          LOG.debug "push [msg:\"#{msg}\"] [device:#{device[:id]}/#{device[:token_type]}] [response:#{response.body}]", nil, user
+          puts response.body
+        rescue => e
+          LOG.debug "push failed: #{e}", nil, user
+        end
 
-        puts response.body
       end
     end
   end

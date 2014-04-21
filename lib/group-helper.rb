@@ -17,6 +17,7 @@ class GroupHelper
         date_created: DateTime.now
       }
       user = SQL[:users].first :github_user_id => member.id.to_s
+      LOG.debug "create_user from_github", nil, user, group
     end
     # Add the member to the group if they are not already
     membership = self.get_membership(group[:id], user[:id]).first
@@ -29,6 +30,7 @@ class GroupHelper
         date_updated: DateTime.now,
         date_created: DateTime.now
       }
+      LOG.debug "add_membership", nil, user, group
       return user # Return the user if they were added 
     else
       # Re-activate the user if there was already a membership for them
@@ -57,6 +59,7 @@ class GroupHelper
     members.each do |member|
       if !github_member_ids.include? member[:github_user_id]
         SQL[:memberships].where(:id => member[:id]).update(:active => false)
+        LOG.debug "remove_membership", nil, user, group
         removed << SQL[:users].first(:id => member[:user_id])
       end
     end
@@ -101,6 +104,26 @@ class GroupHelper
         pushie.push(user, msg, {:group_id => group[:id]})
       end
 
+    end
+  end
+
+end
+
+class GroupUpdater
+  include Celluloid::IO
+
+  def update_user_groups(user, github_access_token, pushie)
+    Octokit.auto_paginate = true
+    octokit = Octokit::Client.new :access_token => github_access_token
+    teams = octokit.user_teams 
+
+    teams.each do |team|
+      group = SQL[:groups].first(:github_team_id => team['id'].to_s)
+      if group
+        puts "Updating members for group #{group[:id]} #{group[:name]}"
+        result = GroupHelper.update_group_members_from_github octokit, group
+        GroupHelper.send_notifications_about_changed_members group, result, pushie
+      end
     end
   end
 

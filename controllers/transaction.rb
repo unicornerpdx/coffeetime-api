@@ -91,6 +91,8 @@ class App < Jsonatra::Base
     @membership = get_membership(@group[:id], @user[:id]).first
 
     if transaction_id
+      LOG.debug "#{callback_text} [transaction:#{transaction_id}]", request.path, @user, @group
+
       # Send the other user a push notification with a message and their updated balance
       other_user_balance = other_user_membership.first[:balance]
       data = {

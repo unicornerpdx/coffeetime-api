@@ -43,6 +43,8 @@ class App < Jsonatra::Base
 
     jj github_user
 
+    LOG.debug "login #{github_user['login']}", request.path
+
     # Check if the user already exists, and update if so
     user = SQL[:users].first :github_user_id => github_user['id'].to_s
     if user
@@ -62,9 +64,10 @@ class App < Jsonatra::Base
         date_created: DateTime.now
       }
       user = SQL[:users].first :github_user_id => github_user['id'].to_s
+      LOG.debug "create_user", request.path, user
     end
 
-    update_user_groups user, github_token['access_token']
+    @@group_updater.async.update_user_groups user, github_token['access_token'], @@pushie
 
     token = {
       user_id: user[:id],
@@ -92,8 +95,10 @@ class App < Jsonatra::Base
 
       user = SQL[:users].first :id => params['user_id']
 
+      LOG.debug "auth_assertion", request.path, user
+
       # Query the list of orgs the user belongs to and add their membership
-      update_user_groups user, ''
+      @@group_updater.async.update_user_groups user, '', @@pushie
 
       token = {
         user_id: user[:id],
@@ -110,21 +115,6 @@ class App < Jsonatra::Base
         display_name: user[:display_name],
         avatar_url: user[:avatar_url]
       }
-    end
-  end
-
-  def update_user_groups(user, github_access_token) 
-    Octokit.auto_paginate = true
-    octokit = Octokit::Client.new :access_token => github_access_token
-    teams = octokit.user_teams 
-
-    teams.each do |team|
-      group = SQL[:groups].first(:github_team_id => team['id'].to_s)
-      if group
-        puts "Updating members for group #{group[:id]} #{group[:name]}"
-        result = GroupHelper.update_group_members_from_github octokit, group
-        GroupHelper.send_notifications_about_changed_members group, result, @@pushie
-      end
     end
   end
 
