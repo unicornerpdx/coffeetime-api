@@ -93,7 +93,7 @@ class App < Jsonatra::Base
       user = SQL[:users].first :id => params['user_id']
 
       # Query the list of orgs the user belongs to and add their membership
-      update_user_groups user, '2e8e41b083ffb18bd7d782e3a7112a074b82492f'
+      update_user_groups user, ''
 
       token = {
         user_id: user[:id],
@@ -121,6 +121,7 @@ class App < Jsonatra::Base
     teams.each do |team|
       group = SQL[:groups].first(:github_team_id => team['id'].to_s)
       if group
+        puts "Updating members for group #{group[:id]} #{group[:name]}"
         result = GroupHelper.update_group_members_from_github octokit, group
         GroupHelper.send_notifications_about_changed_members group, result, @@pushie
       end
