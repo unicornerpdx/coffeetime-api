@@ -16,34 +16,30 @@ class App < Jsonatra::Base
     param_error :code, 'missing', 'code required' if params[:code].blank?
     halt if response.error?
 
-    client = HTTPClient.new
-    result = client.post "https://github.com/login/oauth/access_token", {
-      :client_id => SiteConfig['github']['client_id'],
-      :client_secret => SiteConfig['github']['client_secret'],
-      :code => params[:code],
-      :redirect_uri => SiteConfig['github']['redirect_uri']
-    }, {
-      'Accept' => 'application/json'
-    }
+    result = HTTP.accept(:json)
+      .post "https://github.com/login/oauth/access_token", :json => {
+        :client_id => SiteConfig['github']['client_id'],
+        :client_secret => SiteConfig['github']['client_secret'],
+        :code => params[:code],
+        :redirect_uri => SiteConfig['github']['redirect_uri']
+      }
 
-    puts result.body
+    param_error :github, 'github_error', 'Bad response from Github API' if result.body.nil? 
 
-    param_error :github, 'bad_response', 'Bad response from Github API' if result.body.nil? 
+    github_token = result.parse
 
-    github_token = JSON.parse result.body
-
-    param_error :github, 'bad_response', 'Github API did not return JSON' if github_token.nil?
+    param_error :github, 'github_error', 'Github API did not return JSON' if github_token.nil?
     param_error :code, 'invalid_code', github_token['error_description'] if github_token['error_description']
-    param_error :code, 'bad_response', 'Github API did not return an access token' if github_token['access_token'].nil?
+    param_error :code, 'github_error', 'Github API did not return an access token' if github_token['access_token'].nil?
 
     halt if response.error?
 
     # Look up the user profile from Github
 
-    result = client.get "https://api.github.com/user", nil, {
+    result = HTTP.accept(:json).with_headers(
       'Authorization' => "Bearer #{github_token['access_token']}"
-    }
-    github_user = JSON.parse result.body
+    ).get "https://api.github.com/user"
+    github_user = result.parse
 
     jj github_user
 
@@ -67,6 +63,8 @@ class App < Jsonatra::Base
       }
       user = SQL[:users].first :github_user_id => github_user['id'].to_s
     end
+
+    update_user_groups user, github_token['access_token']
 
     token = {
       user_id: user[:id],
@@ -94,6 +92,9 @@ class App < Jsonatra::Base
 
       user = SQL[:users].first :id => params['user_id']
 
+      # Query the list of orgs the user belongs to and add their membership
+      update_user_groups user, '2e8e41b083ffb18bd7d782e3a7112a074b82492f'
+
       token = {
         user_id: user[:id],
         username: user[:username],
@@ -109,6 +110,20 @@ class App < Jsonatra::Base
         display_name: user[:display_name],
         avatar_url: user[:avatar_url]
       }
+    end
+  end
+
+  def update_user_groups(user, github_access_token) 
+    Octokit.auto_paginate = true
+    octokit = Octokit::Client.new :access_token => github_access_token
+    teams = octokit.user_teams 
+
+    teams.each do |team|
+      group = SQL[:groups].first(:github_team_id => team['id'].to_s)
+      if group
+        result = GroupHelper.update_group_members_from_github octokit, group
+        GroupHelper.send_notifications_about_changed_members group, result, @@pushie
+      end
     end
   end
 

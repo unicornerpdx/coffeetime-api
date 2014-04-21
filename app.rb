@@ -28,8 +28,8 @@ class App < Jsonatra::Base
     end
     halt if response.error?
 
-    @github = Octokit::Client.new :access_token => @token['github_access_token']
     Octokit.auto_paginate = true
+    @github = Octokit::Client.new :access_token => @token['github_access_token']
 
     @user = SQL[:users].first :id => @token['user_id']
 
