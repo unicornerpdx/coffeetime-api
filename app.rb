@@ -2,11 +2,14 @@ Dir.glob(['controllers','lib'].map! {|d| File.join d, '*.rb'}).each do |f|
   require_relative f
 end
 
+
 class App < Jsonatra::Base
 
-  @@pushie = Pushie.new 
-  @@callback = Callback.new
-  @@group_updater = GroupUpdater.new
+  set_up_actors do
+    @@pushie = Pushie.new 
+    @@callback = Callback.new
+    @@group_updater = GroupUpdater.new
+  end
 
   configure do
     set :arrayified_params, [:keys]
