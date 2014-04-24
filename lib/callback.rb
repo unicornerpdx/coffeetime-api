@@ -2,13 +2,13 @@ class Callback
   include Celluloid::IO
 
   def run(group, data)
-    payload = Rack::Utils.build_nested_query(Callback.stringify_integers_deep!(data))
+    payload = data.to_json
 
     callbacks = SQL[:callbacks].where(:group_id => group[:id], :active => true)
     callbacks.each do |callback|
       sent_date = DateTime.now
       begin
-        result = HTTP.post callback[:url], body: payload, socket_class: Celluloid::IO::TCPSocket
+        result = HTTP['Content-Type' => 'application/json'].post callback[:url], body: payload, socket_class: Celluloid::IO::TCPSocket
         headers = result.headers.to_h
         SQL[:callbacks].where(:id => callback[:id]).update({
           last_payload_sent_date: sent_date,
@@ -33,13 +33,4 @@ class Callback
       end
     end
   end
-
-  # Fix for https://github.com/rack/rack/issues/557
-  def self.stringify_integers_deep!(hash)
-    hash.each do |key, value|
-      hash[key] = value.to_s if value.kind_of?(Integer)
-      Callback.stringify_integers_deep!(value) if value.kind_of?(Hash)
-    end
-  end
-
 end
